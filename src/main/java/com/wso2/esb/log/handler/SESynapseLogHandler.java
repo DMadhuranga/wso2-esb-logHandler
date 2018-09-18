@@ -11,7 +11,7 @@ import org.apache.synapse.rest.RESTConstants;
 
 public class SESynapseLogHandler extends AbstractSynapseHandler {
 
-    // Logger instance.
+    // Logger instance
     private static final Log LOGGER = LogFactory.getLog(SESynapseLogHandler.class);
 
     private static final String SELOG_INFLOW_REQUEST_START_TIME = "SELOG_INFLOW_REQUEST_START_TIME";
@@ -30,9 +30,8 @@ public class SESynapseLogHandler extends AbstractSynapseHandler {
     public boolean handleRequestInFlow(MessageContext synCtx) {
 
         SynapseLog log = SELogTrackUtil.getLog(synCtx, LOGGER);
-        synCtx.setProperty(SELOG_INFLOW_REQUEST_START_TIME, System.currentTimeMillis());
-
         log.auditDebug("Entering SESynapseLogHandler.handleRequestInFlow");
+        synCtx.setProperty(SELOG_INFLOW_REQUEST_START_TIME, System.currentTimeMillis());
 
         try {
             //Set the logging context
@@ -49,11 +48,9 @@ public class SESynapseLogHandler extends AbstractSynapseHandler {
             log.auditLog(">> HTTP Headers" + SELogTrackUtil.getHTTPHeaders(synCtx));
             log.auditDebug("Returning SESynapseLogHandler.handleRequestInFlow");
         } catch (Exception e) {
-
             log.auditWarn("Unable to set log context due to : " + e.getMessage());
         }
-        //Always true
-        return true;
+        return true;           // always return true
     }
 
     /*
@@ -73,14 +70,12 @@ public class SESynapseLogHandler extends AbstractSynapseHandler {
         try {
             //Set the logging context
             SELogTrackUtil.setLogContext(synCtx, log);
-
             log.auditLog(">>>> HTTP Headers " + SELogTrackUtil.getHTTPHeaders(synCtx));
             log.auditDebug("Returning SESynapseLogHandler.handleRequestOutFlow");
         } catch (Exception e) {
             log.auditWarn("Unable to set log context due to : " + e.getMessage());
         }
-        //Always true
-        return true;
+        return true;           // always return true
     }
 
     /*
@@ -103,13 +98,9 @@ public class SESynapseLogHandler extends AbstractSynapseHandler {
             log.auditLog("<<<< HTTP Headers " + SELogTrackUtil.getHTTPHeaders(synCtx));
             log.auditDebug("Returning SESynapseLogHandler.handleResponseInFlow");
         } catch (Exception e) {
-
-            log.auditWarn(
-                    "Unable to set log context due to : " + e.getMessage());
+            log.auditWarn("Unable to set log context due to : " + e.getMessage());
         }
-
-        //Always true
-        return true;
+        return true;           // always return true
     }
 
     /*
@@ -122,51 +113,48 @@ public class SESynapseLogHandler extends AbstractSynapseHandler {
      */
     public boolean handleResponseOutFlow(MessageContext synCtx) {
 
-        long responseTime = 0;
-        long serviceTime = 0;
-        long backendTime = 0;
-        long backendEndTime = 0;
-        long endTime = System.currentTimeMillis();
         SynapseLog log = SELogTrackUtil.getLog(synCtx, LOGGER);
         log.auditDebug("Entering SESynapseLogHandler.handleResponseOutFlow");
 
-        try {
-            //Set the logging context
-            SELogTrackUtil.setLogContext(synCtx, log);
-            //Log the request as per wire log
+        long responseTime, serviceTime = 0, backendTime = 0, backendEndTime = 0;
+        long endTime = System.currentTimeMillis();
 
+        try {
+            // Set the logging context
+            SELogTrackUtil.setLogContext(synCtx, log);
+            // Log the request as per wire log
             log.auditLog("<< " + SELogTrackUtil.getHTTPStatusMessage(synCtx));
             log.auditLog("<< HTTP Headers " + SELogTrackUtil.getHTTPHeaders(synCtx));
             log.auditDebug("Returning SESynapseLogHandler.handleResponseOutFlow");
 
-            long startTime = (Long) synCtx.getProperty(SELOG_INFLOW_REQUEST_START_TIME);
-            long backendStartTime = (Long)synCtx.getProperty(SELOG_OUTFLOW_REQUEST_START_TIME);
+            long startTime = 0, backendStartTime = 0;
+            if (synCtx.getProperty(SELOG_INFLOW_REQUEST_START_TIME) != null) {
+                startTime = (Long) synCtx.getProperty(SELOG_INFLOW_REQUEST_START_TIME);
+            }
+
+            if (synCtx.getProperty(SELOG_OUTFLOW_REQUEST_START_TIME) != null) {
+                backendStartTime = (Long) synCtx.getProperty(SELOG_OUTFLOW_REQUEST_START_TIME);
+            }
 
             if (synCtx.getProperty(SELOG_INFLOW_RESPONSE_END_TIME) != null) {
                 backendEndTime = (Long)synCtx.getProperty(SELOG_INFLOW_RESPONSE_END_TIME);
             }
 
+            responseTime = endTime - startTime;
             //When start time not properly set
             if (startTime == 0) {
-                responseTime = 0;
                 backendTime = 0;
                 serviceTime = 0;
             } else if (endTime != 0 && backendStartTime != 0 && backendEndTime != 0) { //When
                 // response caching is disabled
-                responseTime = endTime - startTime;
                 backendTime = backendEndTime - backendStartTime;
                 serviceTime = responseTime - backendTime;
-
             } else if (endTime != 0 && backendStartTime == 0) {//When response caching enabled
-                responseTime = endTime - startTime;
-                serviceTime = responseTime;
                 backendTime = 0;
-                //cacheHit = true;
+                serviceTime = responseTime;
             }
 
-            responseTime = endTime - startTime;
-
-            String API_Name = (String) synCtx.getProperty(RESTConstants.SYNAPSE_REST_API);
+            String API_NAME = (String) synCtx.getProperty(RESTConstants.SYNAPSE_REST_API);
             String HTTP_METHOD = (String) synCtx.getProperty(Constants.Configuration.HTTP_METHOD);
             String CONTEXT = (String) synCtx.getProperty(RESTConstants.REST_API_CONTEXT);
             String FULL_REQUEST_PATH = (String) synCtx.getProperty(RESTConstants.REST_FULL_REQUEST_PATH);
@@ -176,20 +164,16 @@ public class SESynapseLogHandler extends AbstractSynapseHandler {
             String ERROR_MESSAGE = (String) synCtx.getProperty(SynapseConstants.ERROR_MESSAGE);
 
             log.auditLog("API Transaction Details:"
-                    + "API_NAME: " + API_Name + ",HTTP_METHOD: " + HTTP_METHOD + ", CONTEXT: " + CONTEXT +
+                    + "API_NAME: " + API_NAME + ",HTTP_METHOD: " + HTTP_METHOD + ", CONTEXT: " + CONTEXT +
                     ",FULL_REQUEST_PATH" + FULL_REQUEST_PATH + ",SUB_PATH: " + SUB_PATH +
                     ", HTTP_RESPONSE_STATUS_CODE: " + HTTP_RESPONSE_STATUS_CODE + ", RESPONSE_TIME: " + responseTime +
                     ", BACKEND_TIME: " + backendTime + ", SERVICE_TIME: " + serviceTime +
                     ", ERROR_CODE: " + ERROR_CODE + ", ERROR_MESSAGE: " + ERROR_MESSAGE);
 
         } catch (Exception e) {
-
-            log.auditWarn(
-                    "Unable to set log context due to : " + e.getMessage());
+            log.auditWarn("Unable to set log context due to : " + e.getMessage());
         }
 
-        //Always true
-        return true;
+        return true;           // always return true
     }
 }
-
