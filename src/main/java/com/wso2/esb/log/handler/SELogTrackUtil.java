@@ -3,15 +3,12 @@ package com.wso2.esb.log.handler;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.axis2.addressing.EndpointReference;
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.logging.Log;
 import org.apache.log4j.MDC;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.SynapseLog;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.mediators.MediatorLog;
-import org.apache.synapse.transport.passthru.PassThroughConstants;
 
 public class SELogTrackUtil {
 
@@ -128,33 +125,6 @@ public class SELogTrackUtil {
     }
 
     /*
-     * Return the HTTP header map reference from synapse context.
-     *
-     * @param context synapse message context.
-     * @return reference to HTTP header map reference.
-     */
-    @SuppressWarnings("rawtypes")
-    public static Map getHTTPHeaders(MessageContext context) {
-
-        org.apache.axis2.context.MessageContext axis2MessageCtx =
-                ((Axis2MessageContext) context).getAxis2MessageContext();
-
-        return (Map) axis2MessageCtx.getProperty(
-                org.apache.axis2.context.MessageContext.TRANSPORT_HEADERS);
-    }
-
-      //Clears the thread local values.
-
-    public static void clearLogContext() {
-
-        MDC.remove(TRACKING_TO);
-        MDC.remove(TRACKING_API);
-        MDC.remove(TRACKING_HTTP_METHOD);
-        MDC.remove(TRACKING_MessageID);
-        MDC.remove(TRACKING_ID);
-    }
-
-    /*
      * Get a SynapseLog instance appropriate for the given context.
      *
      * @param synCtx the current message context
@@ -164,87 +134,4 @@ public class SELogTrackUtil {
         return new MediatorLog(log, false, synCtx);
     }
 
-    /*
-     * Returns the HTTP status code with appended description.
-     *
-     * @param synCtx the current message context
-     * @return HTTP status description.
-     */
-    public static String getHTTPStatusMessage(MessageContext synCtx) {
-
-        org.apache.axis2.context.MessageContext axis2MessageCtx =
-                ((Axis2MessageContext) synCtx).getAxis2MessageContext();
-
-        StringBuilder msg = new StringBuilder();
-
-        Object o = axis2MessageCtx.getProperty(PassThroughConstants.HTTP_SC);
-
-        if (o instanceof Integer) {
-
-            //Set the status code or address
-            Integer statusCode =
-                    (Integer) axis2MessageCtx.getProperty(PassThroughConstants.HTTP_SC);
-            if (statusCode != null) {
-
-                msg.append(statusCode);
-                msg.append(" ");
-                msg.append(HttpStatus.getStatusText(statusCode));
-            }
-        } else if (o instanceof String) {
-            msg.append(o);
-        }
-
-        return msg.toString();
-    }
-
-    /*
-     * Returns the HTTP method associated with the context.
-     *
-     * @param synCtx the current message context
-     * @return HTTP method name.
-     */
-    public static String getHTTPMethod(MessageContext synCtx) {
-
-        org.apache.axis2.context.MessageContext axis2MessageCtx =
-                ((Axis2MessageContext) synCtx).getAxis2MessageContext();
-
-        return (String) axis2MessageCtx.getProperty("HTTP_METHOD");
-    }
-
-    /*
-     * Returns the HTTP method associated with the context.
-     *
-     * @param synCtx the current message context
-     * @return HTTP method name.
-     */
-    public static String getToHTTPAddress(MessageContext synCtx) {
-
-        org.apache.axis2.context.MessageContext axis2MessageCtx =
-                ((Axis2MessageContext) synCtx).getAxis2MessageContext();
-
-        EndpointReference to = axis2MessageCtx.getTo();
-
-        if (to != null)
-            return to.getAddress();
-
-        return "";
-    }
-
-    /*
-     * Returns the HTTP method associated with the context.
-     *
-     * @param synCtx the current message context
-     * @return HTTP method name.
-     */
-    public static String getReplyToHTTPAddress(MessageContext synCtx) {
-
-        org.apache.axis2.context.MessageContext axis2MessageCtx = ((Axis2MessageContext) synCtx).getAxis2MessageContext();
-
-        EndpointReference replyTo = axis2MessageCtx.getReplyTo();
-
-        if (replyTo != null)
-            return replyTo.getAddress();
-
-        return "";
-    }
 }
